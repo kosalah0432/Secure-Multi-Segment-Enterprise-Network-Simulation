@@ -1,0 +1,479 @@
+Router 1 (R1)
+
+en
+hostname R1
+conf t
+int g0/2
+no sh
+ex
+............... sub interface
+
+int g0/2.10
+encapsulation dot1Q 10
+ip add 192.168.5.1 255.255.255.248
+no sh
+ex
+int g0/2.20
+encapsulation dot1Q 20
+ip add 192.168.5.9 255.255.255.248
+no sh
+ex
+int g0/2.30
+encapsulation dot1Q 30
+ip add 192.168.5.17 255.255.255.248
+no sh
+ex
+int g0/1
+ip add 192.168.1.5 255.255.255.252
+no sh
+ex
+int g0/0
+ip add 192.168.1.1 255.255.255.252
+no sh
+do wr
+
+............... ospf 
+
+int loopback 1
+ip add 2.2.2.2 255.255.255.255
+no sh
+ex
+
+router ospf 1
+net 2.2.2.2 0.0.0.0 area 0
+net 192.168.1.0 0.0.0.3 area 0
+net 192.168.1.4 0.0.0.3 area 0
+net 192.168.1.4 0.0.0.3 area 0
+net 192.168.5.0 0.0.0.7 area 0
+net 192.168.5.8 0.0.0.7 area 0
+net 192.168.5.16 0.0.0.7 area 0
+passive-interface g0/2
+passive-interface loopback 1
+do wr
+
+............... ntp server
+
+clock timezone WAT 1
+ntp server 192.168.5.10 key 1
+ntp authenticate
+ntp authentication-key 1 md5 secure 
+ntp trusted-key 1
+
+............... extended acl
+
+ip access-list extended web_server
+permit ip 192.168.10.0 0.0.0.255 host 192.168.5.2 
+permit ip 192.168.20.0 0.0.0.255 host 192.168.5.2 
+permit ip 192.168.40.0 0.0.0.31 host 192.168.5.2 
+permit ip 192.168.40.32 0.0.0.31 host 192.168.5.2 
+permit ip 192.168.50.0 0.0.0.15 host 192.168.5.2 
+
+permit tcp 192.168.10.0 0.0.0.255 host 192.168.5.2 eq 80
+permit tcp 192.168.10.0 0.0.0.255 host 192.168.5.2 eq 443
+permit tcp 192.168.20.0 0.0.0.255 host 192.168.5.2 eq 80
+permit tcp 192.168.20.0 0.0.0.255 host 192.168.5.2 eq 443
+permit tcp 192.168.40.0 0.0.0.31 host 192.168.5.2 eq 443
+permit tcp 192.168.40.0 0.0.0.31 host 192.168.5.2 eq 80
+permit tcp 192.168.40.32 0.0.0.31 host 192.168.5.2 eq 80
+permit tcp 192.168.40.32 0.0.0.31 host 192.168.5.2 eq 443
+permit tcp 192.168.50.0 0.0.0.15 host 192.168.5.2 eq 80
+permit tcp 192.168.50.0 0.0.0.15 host 192.168.5.2 eq 443
+deny ip any any
+deny tcp any any
+ex
+
+int g0/2.10
+ip access-group web_server out
+ex
+int g0/2.20
+ip access-group web_server out
+ex
+int g0/2.30
+ip access-group web_server out
+ex
+
+............... tacas server
+
+aaa new-model
+tacacs-server host 192.168.5.10 key mykey
+username admin secret cisco
+aaa authentication login auth local group tacacs+ local
+line vty 0 4
+login authentication auth
+transport input telnet
+do wr
+exit
+enable secret cisco
+
+------------------------------------------------------
+Router 2 (R2)
+
+en
+hostname R2
+conf t
+int g0/2
+no sh
+ex
+
+............... sub interface
+
+int g0/2.40
+encapsulation dot1Q 40
+ip add 192.168.40.1 255.255.255.224
+no sh
+ex
+int g0/2.50
+encapsulation dot1Q 50
+ip add 192.168.40.33 255.255.255.224
+no sh
+ex
+int g0/2.60
+encapsulation dot1Q 60
+ip add 192.168.40.65 255.255.255.224
+no sh
+ex
+do wr
+
+............... ospf
+
+int loopback 2
+ip add 3.3.3.3 255.255.255.255
+no sh
+ex
+router ospf 1
+net 3.3.3.3 0.0.0.0 area 0
+net 192.168.1.4 0.0.0.3 area 0
+net 192.168.1.4 0.0.0.3 area 0
+net 192.168.40.0 0.0.0.31 area 0
+net 192.168.40.32 0.0.0.31 area 0
+net 192.168.40.64 0.0.0.31 area 0
+passive-interface g0/2
+passive-interface loopback 2
+do wr
+
+............... standerd acl
+
+ip access-list standard pc_access
+permit 192.168.30.0 0.0.0.255
+deny any
+ex
+int g0/2.10
+ip acc
+ip access-group pc_access out
+ex
+int g0/2.20
+ip access-group pc_access out
+ex
+int g0/2.30
+ip access-group pc_access out
+ex
+do wr
+
+............... ntp server
+
+clock timezone WAT 1
+ntp server 192.168.5.10 key 1
+ntp authenticate
+ntp authentication-key 1 md5 secure 
+ntp trusted-key 1
+
+............... tacas server
+
+aaa new-model
+tacacs-server host 192.168.5.10 key mykey
+username admin secret cisco
+aaa authentication login auth local group tacacs+ local
+line vty 0 4
+login authentication auth
+transport input telnet
+do wr
+exit
+enable secret cisco
+
+------------------------------------------------------
+Router 3 (R3)
+
+en
+hostname R3
+conf t
+int g0/2
+no sh
+ex
+
+............... sub interface 
+
+int g0/2.70
+encapsulation dot1Q 70
+ip add 192.168.10.1 255.255.255.0
+no sh
+ex
+int g0/2.80
+encapsulation dot1Q 80
+ip add 192.168.20.1 255.255.255.0
+no sh
+ex
+int g0/2.90
+encapsulation dot1Q 90
+ip add 192.168.30.1 255.255.255.0
+no sh
+ex
+int g0/1
+no sh
+int g0/1.95
+encapsulation dot1Q 95
+ip add 192.168.50.1 255.255.255.240
+no sh
+ex
+int g0/1.96
+encapsulation dot1Q 96
+ip add 192.168.60.1 255.255.255.240
+no sh
+ex
+do wr
+
+............... ospf
+
+int loopback 0
+ip add 1.1.1.1 255.255.255.255
+no sh
+do wr
+
+router ospf 1
+net 1.1.1.1 0.0.0.0 area 0
+net 192.168.1.0 0.0.0.3 area 0
+net 192.168.10.0 0.0.0.255 area 0
+net 192.168.20.0 0.0.0.255 area 0
+net 192.168.30.0 0.0.0.255 area 0
+net 192.168.50.0 0.0.0.15 area 0
+net 192.168.60.0 0.0.0.15 area 0
+passive-interface g0/1
+passive-interface g0/2
+passive-interface loopback 0
+
+............... standerd acl
+
+ip access-list standard pc_access
+permit 192.168.40.64 0.0.0.31
+deny any
+ex
+int g0/2.10
+ip access-group pc_access out
+ex
+int g0/2.20
+R3(config-subif)#
+ip access-group pc_access out
+int g0/2.30
+ip access-group pc_access out
+ex
+do wr
+
+............... ntp server
+
+clock timezone WAT 1
+ntp server 192.168.5.10 key 1
+ntp authenticate
+ntp authentication-key 1 md5 secure 
+ntp trusted-key 1
+
+............... tacas server
+
+aaa new-model
+tacacs-server host 192.168.5.10 key mykey
+username admin secret cisco
+aaa authentication login auth local group tacacs+ local
+line vty 0 4
+login authentication auth
+transport input telnet
+do wr
+exit
+enable secret cisco
+
+------------------------------------------------------
+
+Switch 1 (SW1)
+en
+conf t
+hostname SW1
+
+............... vlan 
+
+vlan 10
+vlan 20
+vlan 30
+ex
+int f0/2
+switchport mode access 
+switchport access vlan 10
+ex
+int f0/4
+switchport mode access 
+switchport access vlan 20
+ex
+int f0/3
+switchport mode access 
+switchport access vlan 30
+ex
+
+............... trunk
+
+int f0/1
+switchport mode access 
+switchport mode trunk 
+switchport trunk allowed vlan 1,10,20,30
+ex
+do wr
+
+............... port security
+
+int f0/2
+switchport mode access 
+switchport port-security 
+switchport port-security mac-address 00D0.5899.C2DE
+switchport port-security violation shutdown 
+ex
+int f0/3
+switchport mode access 
+switchport port-security 
+switchport port-security mac-address 00D0.979C.8E30
+switchport port-security violation shutdown 
+ex
+int f0/4
+switchport mode access 
+switchport port-security 
+switchport port-security mac-address 000C.CFE7.CAEB
+switchport port-security violation shutdown 
+ex
+do wr
+
+------------------------------------------------------
+Switch 2 (SW2)
+
+en
+conf t
+hostname SW2
+
+............... vlan 
+
+vlan 40
+vlan 50
+vlan 60
+ex
+int range f0/1-2
+switchport mode access 
+switchport access vlan 40
+ex
+int range f0/3-4
+switchport mode access 
+switchport access vlan 50
+ex
+int range f0/5-6
+switchport mode access 
+switchport access vlan 60
+ex
+
+............... trunk
+
+int f0/7
+switchport mode trunk
+switchport trunk allowed vlan 1,40,50,60
+ex
+do wr
+
+............... port security
+
+int range f0/1-6
+switchport mode access 
+switchport port-security 
+switchport port-security maximum 2
+switchport port-security violation restrict 
+switchport port-security mac-address sticky 
+ex
+do wr
+
+------------------------------------------------------
+Switch 3 (SW3)
+en
+conf t
+hostname SW3
+
+............... vlan
+
+vlan 70
+vlan 80
+vlan 90
+ex
+int range f0/1-2
+switchport mode access 
+switchport access vlan 70
+ex
+int range f0/3-4
+switchport mode access 
+switchport access vlan 80
+ex
+int range f0/5-6
+switchport mode access 
+switchport access vlan 90
+ex
+
+............... trunk
+
+int f0/7
+switchport mode trunk 
+switchport trunk allowed vlan 1,70,80,90
+ex
+do wr
+
+............... port security
+
+int range f0/1-6
+switchport mode access 
+switchport port-security 
+switchport port-security maximum 2
+switchport port-security violation restrict 
+switchport port-security mac-address sticky 
+ex
+do wr
+
+------------------------------------------------------
+Switch 4 (SW4)
+
+en
+conf t
+hostname SW4
+
+............... vlan
+
+vlan 65
+ex
+no vlan 65
+vlan 95
+vlan 96
+ex
+int range f0/1-2
+switchport mode access 
+switchport access vlan 95
+ex
+int range f0/3-4
+switchport mode access 
+switchport access vlan 96
+ex
+
+............... trunk
+
+int f0/7
+switchport mode trunk 
+switchport trunk allowed vlan 1,95,96
+ex
+do wr
+
+............... port security
+
+int range f0/1-4
+switchport mode access 
+switchport port-security 
+switchport port-security maximum 2
+switchport port-security violation restrict 
+switchport port-security mac-address sticky 
+ex
+do wr
+------------------------------------------------------
